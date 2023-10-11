@@ -371,3 +371,112 @@ mod3 <- betadisper(distAIT3, subsample3.df$Group1)
 dispersion3 = anova(mod3)  #Anova of distances to centroids to interpret the significance of F --> #NOT SIGNIFICANT: GROUP DISPERSIONs ARE HOMOGENEOUS
 write.table(as.data.frame(dispersion3),"dispersion_Peterborough_Mann.tsv", sep="\t",row.names=TRUE,col.names=TRUE)
 ```
+
+## Antibiotic microbial resistance analysis
+We downloaded the `nucleotide_fasta_protein_homolog_model.fasta` from the CARD database and we replaced the spaces in the db with underscore, so as to keep the full info about the hits in the blastn analysis: 
+```bash
+sed 's/ /_/g' nucleotide_fasta_protein_homolog_model.fasta > nucleotide_fasta_protein_homolog_model.fasta_mod.fasta
+```
+
+We built the database with blast+
+```bash
+makeblastdb -in nucleotide_fasta_protein_homolog_model.fasta_mod.fasta -dbtype nucl -out card_nucl_Jan2023
+```
+
+We also created a database of three housekeeping genes to be used as control in the ancient samples (and normalized the results to account for possible taphonomic effects in chornologicaly different samples). We downloaded the sequences with `efetch` and `esearch` and built the database with blast+
+
+```bash
+esearch -db nucleotide -query '"recA"[Protein name]' | efetch -format fasta > recA_nu.fasta
+esearch -db nucleotide -query '"gyrB"[Protein name]' | efetch -format fasta > gyrB_nu.fasta
+esearch -db nucleotide -query '"rpoB"[Protein name]' | efetch -format fasta > rpoB_nu.fasta
+cat *.fasta > recA_gyrB_rpoB_nu.fasta
+# build the database
+makeblastdb -in recA_gyrB_rpoB_nu.fasta -dbtype nucl -out recA_gyrB_rpoB_nu
+```
+
+We extracted the reads classified by Kraken2 as bacteria with `extract_kraken_reads.py`, from KrakenTools (https://github.com/jenniferlu717/KrakenTools). The bacterial reads were converted in `fasta` format.
+
+```bash
+KRK=filename.krk
+FASTQ=filename.fastq.gz
+OUTPUT=path/to/folder
+FILENAME=$(basename "$KRK")
+FNAME="${FILENAME%.krk}"
+extract_kraken_reads.py -k $KRK -s $FASTQ -o ${OUTPUT}/${FNAME}.bacteria.fasta -t 2 --include-children -r ${KRK}.report
+```
+
+We ran the analysis in blast twice for each sample, once with the card database, and once with the housekeeping genes database. 
+
+```bash
+FASTA=fasta_file
+OUTPUT=output_sample_name
+# run against card db
+DBNAME=/g100_scratch/userexternal/cottoni0/databases/card_aro_Jan2023/card_nucl_Jan2023
+blastn -query $FASTA -db $DBNAME -out ${OUTPUT}.aro.blastn.out -outfmt 6
+# run against housekeeping genes db
+DBNAME=/g100_scratch/userexternal/cottoni0/databases/card_aro_housekeeping/recA_gyrB_rpoB_nu
+blastn -query $FASTA -db $DBNAME -out ${OUTPUT}.hk.blastn.out -outfmt 6
+```
+
+A custom python script (available in toolbox repository) was used to normalize for the sequencing depth the hits to the housekeeping database for each sample of the comparative database used and generate the file `Peterborough_full_dataset_hk_genes.txt`. 
+```bash
+amr_blastn_parser_v2.py *.blastn.out > Peterborough_full_dataset_hk_genes.txt
+```
+
+We retrieved the aro categories for the hits in the card database and generated a `file.index` with a custom script `aro_blastn_parser.py`.
+```bash
+ARO_INDEX=card_download_Jan2023/aro_index.tsv
+for i in $(find -name "*aro.blastn.out" -type f)
+do 
+  filename=$(basename "$i")
+  fname="${filename%.out}"
+  echo "parsing $i"
+  aro_blastn_parser.py $i $ARO_INDEX > $(dirname "$i")/${fname}.out.index
+done
+```
+
+Reads-hits in the blastn output are sorted by decreasing bitscore (last column). Sort and uniq the read-names (the first with the highest bitscore will be returned). 
+```bash
+for i in $(find -name "*.out.index" -type f); do echo $i; sort -u -k1,1 $i | awk -F'\t' 'BEGIN{OFS="\t"}{print $1,$4}' > ${i}.uniq; done
+```
+
+The following analyses were done in R. We fits prepared a table of the samples by merging all the files from each dataset (from this study and the literature) to generate the file `Peterborough_full_dataset_amr_genes.txt` 
+
+```R
+files <- list.files(pattern="*.uniq$", full.names=T,recursive=FALSE)
+for (i in files) {
+  if (!exists("tabfinal")){
+    tab=read.delim(i, header=F, fill=T, row.names=NULL, sep="\t")
+    tabfinal = table(tab$V2)
+    print(paste0("parsing ", files[c(1,2)]))
+    } else {
+  # merge all the others
+  tab=read.delim(i, header=F, fill=T, row.names=NULL, sep="\t")
+  tabfinal = merge(tabfinal, table(tab$V2), by=1, all=T)}
+  #print(paste0("parsing ", i)
+}
+colnames(tabfinal) = c("gene",files)
+write.table(tabfinal, file = 'Peterborough_full_dataset_amr_genes.txt', sep="\t", row.names=F, na="0", col.names=T, quote = FALSE)
+```
+
+Then we imported the two tables with the results of the housekeeping genes and the card databae in R and made some changes in them in order to make them fully consistent in terms of order of the samples.
+```R
+amr_genes = read.delim("Peterborough_full_dataset_amr_genes.txt", header=T, fill=T, row.names=NULL, sep="\t")
+hk3_genes = read.delim("Peterborough_full_dataset_hk_genes.txt", header=T, fill=T, row.names=NULL, sep="\t")
+amr_genes[is.na(amr_genes)] <- 0
+amr_genes.final = amr_genes		
+row.names(amr_genes.final) = amr_genes.final[,1]
+amr_genes.final = amr_genes.final[,-1]
+# transpose the amr genes table
+amr_genes.final = t(amr_genes.final)
+#reorder hk3_genes samples to be consistent with amr 
+hk3_genes.sorted = hk3_genes[c(2,1,4:6,8,9:53,57:87),]
+write.table(hk3_genes.sorted, "Peterborough_full_dataset_hk_genes.sorted.txt", quote=F, sep="\t", row.names=F, col.names=T)
+```
+
+Finally we normalized the AMR hits with housekeeping genes hits and created a dataframe
+```R
+amr_genes.final.norm = amr_genes.final/hk3_genes.sorted$Hits*1000000
+amr_genes.final.norm = as.data.frame(amr_genes.final.norm)
+write.table(amr_genes.final.norm, "Peterborough_AMR_hk3norm_cpm.tsv", quote=F, sep="\t", row.names=T, col.names=T)
+```
