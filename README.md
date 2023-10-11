@@ -94,7 +94,7 @@ do
 done
 ```
 Then, we ran Bracken to obtain actual quantification data, as described in the manual of the program. We first built the Bracken database, and then ran the samples. 
-We used a read length of 65 bp and a threshold of 50 reads. 
+We used a read length of 65 bp and a threshold of 50 reads. Modern metagenome data were run with read lentgh of 90 bp. 
 ```bash
 KRAKEN_DB=customkraken2_50Gb_2020
 THREADS=16
@@ -144,6 +144,9 @@ grep -v "Viruses\|Fungi" abundance_table_IDs.merged.norm.taxonomy.finall > abund
 ## Analysis of metagenomic data in R
 We used the R package Phyloseq to analysed the normalized abundance table of Archaea and Bacteria. 
 
+### Preparation of Phyloseq datasets
+Phyloseq works with `biom` objects that store all the information required for the analyses: abundance of taxa, sample metadata, taxonomy. We imported the table with the species abundances and the full taxonomic ranks, which has the taxa in the rows and the samples in the columns. Note that we set the column #20, corresponding to the species names, as row names.
+
 ```R
 library(phyloseq)
 library(ggplot2)
@@ -171,3 +174,155 @@ keepTaxa = taxa_names(my_biom)[which((x / sum(x)) > minTotRelAbun)]
 my_biom_flt = prune_taxa(keepTaxa, my_biom)
 # convert to relative freq
 my_biom_rel = transform_sample_counts(my_biom_flt, function(x) x / sum(x))
+```
+
+### Non-metric Multidimensional Scaling
+We set the following colour settings associated with the groups listed in the metadata:
+```R
+bg=c("royalblue",		
+"blue",					
+"mediumpurple 3",				
+"#9C661F",				
+"darkgreen",			
+"blueviolet",			
+"#9C661F",				
+"#808080",				
+"red",				
+"palevioletred",				
+"darkred")				
+
+coul=c("skyblue 1",		
+"blue",					
+"mediumpurple",				
+"#9C661F",				
+"darkgreen",			
+"blueviolet",			
+"#9C661F",				
+"#D3D3D3",				
+"red",				
+"palevioletred",				
+"darkred")				
+```
+
+We made a  clr-transformation of the abundance data with the library `microbiome`, calculated the Aitchinson distances and the nMDS as follows: 
+```R
+library(microbiome)
+my_biom_rel_clr = transform(my_biom_rel, "clr")
+distAIT = distance(my_biom_rel_clr, method = "euclidean")
+ordAIT = ordinate(my_biom_rel_clr, method = "NMDS", distance = distAIT)
+```
+
+Finally we plot the nMDS. We used the groups as reported in the `metadata.txt` file (column Group1).
+```R
+p=plot_ordination(my_biom_rel_clr, ordAIT, color = "Group1") 
+# further refining of the chart
+p=p + theme_bw() +
+  geom_point(aes(shape=Group1, color=Group1, fill=Group1), size=2.2) +
+  scale_shape_manual(values=c(21,21,21,10,3,4,0,21,8,2,13)) +
+  scale_color_manual(values=bg) +
+  scale_fill_manual(values=coul) +
+  labs(color  = "Group1", shape = "Group1")   #merge legend
+# remove overlapping layer
+p$layers <- p$layers[-1]
+```
+
+### Differential taxonomic abundances with DESeq2
+We used DESeq2 to identify differentially abundant species in the datasets examined. Pyloseq was used to select only the datasets of interest from the original `my_biom` object. 
+
+```R
+# subsample oral microbiomes 
+subgroup = c("Peterborough","Dental_calculus_modern","Dental_calculus_human_18-19th_c.", "Dental_calculus_medieval","Oral_plaque")
+subsample = subset_samples(my_biom, Group1 %in% subgroup)
+# Filter low-abundance taxa (0.02% threshold).
+minTotRelAbun = 0.0002
+x = taxa_sums(subsample)
+keepTaxa = taxa_names(subsample)[which((x / sum(x)) > minTotRelAbun)]
+subsample_flt = prune_taxa(keepTaxa, subsample)
+# make a +1 offset to run Deseq2 (which does not tolerate zero counts)
+otu_table(subsample_flt) = otu_table(subsample_flt)+1  
+# make deseq object from phyloseq object
+ds = phyloseq_to_deseq2(subsample_flt, ~ Group1)
+# Run DESeq2
+dds.data = DESeq(ds)
+```
+
+We first compared Peterborough samples against the modern dental calculus samples: 
+```R
+# 1) Peterborough VS Dental_calculus_modern
+# With the 'contrast' function you screen two different set of samples (based on your metadata) for differential taxa. 
+res = results(dds.data, contrast=c("Group1","Peterborough","Dental_calculus_modern"))
+# sort based on p-value adjusted:
+resOrdered = res[order(res$padj, na.last=NA), ]
+# set a threshold value for the False Discovery Rate (FDR):
+alpha = 0.01
+# get only significant taxa based on p-value adjusted (the FDR):
+resSig <- subset(resOrdered, padj < alpha)
+# sort significant values based on the log2-fold-change:
+resfc = resSig[order(resSig$log2FoldChange),]
+# sort significant values based on abundance (the base mean):
+resbm = resSig[order(resSig$baseMean),]
+# save the the tables 
+write.table(as.data.frame(resbm), file="deseq2_Peterborough_modern.tsv", sep="\t", row.names=TRUE, col.names=TRUE, quote=F)
+  # convert the data in a dataframe
+resSigMod = cbind(as(resSig, "data.frame"), as(tax_table(subsample_flt)[rownames(resSig), ], "matrix"))
+# Plot log-fold-changes of the OTUs based on species
+p1=ggplot(resSigMod, aes(x=species, y=log2FoldChange, color=phylum)) +
+    geom_jitter(size=3, width = 0.2) +
+    theme(axis.text.x = element_text(size = 10, angle = -90, hjust = 0, vjust=0.5))
+```
+
+Then we compared Peterborough samples against the 18th-19th century dental calculus samples from Radcliffe: 
+```R
+# 2) Peterborough VS Velsko
+# With the 'contrast' function you screen two different set of samples (based on your metadata) for differential taxa. 
+res = results(dds.data, contrast=c("Group1","Peterborough","Dental_calculus_human_18-19th_c."))
+# sort based on p-value adjusted:
+resOrdered = res[order(res$padj, na.last=NA), ]
+# set a threshold value for the False Discovery Rate (FDR):
+alpha = 0.01
+# get only significant taxa based on p-value adjusted (the FDR):
+resSig <- subset(resOrdered, padj < alpha)
+# sort significant values based on the log2-fold-change:
+resfc = resSig[order(resSig$log2FoldChange),]
+# sort significant values based on abundance (the base mean):
+resbm = resSig[order(resSig$baseMean),]
+# save the the tables 
+write.table(as.data.frame(resbm), file="deseq2_Peterborough_Velsko.tsv", sep="\t", row.names=TRUE, col.names=TRUE, quote=F)
+  # convert the data in a dataframe
+resSigMod = cbind(as(resSig, "data.frame"), as(tax_table(subsample_flt)[rownames(resSig), ], "matrix"))
+# Plot log-fold-changes of the OTUs based on species
+p2=ggplot(resSigMod, aes(x=species, y=log2FoldChange, color=phylum)) +
+    geom_jitter(size=3, width = 0.2) +
+    theme(axis.text.x = element_text(size = 10, angle = -90, hjust = 0, vjust=0.5))
+```
+
+Finally we compared Peterborough with the Medeival dental calculus dataset form Ireland
+```R
+# 3) Peterborough VS Dental_calculus_medieval
+# With the 'contrast' function you screen two different set of samples (based on your metadata) for differential taxa. 
+res = results(dds.data, contrast=c("Group1","Peterborough","Dental_calculus_medieval"))
+# sort based on p-value adjusted:
+resOrdered = res[order(res$padj, na.last=NA), ]
+# set a threshold value for the False Discovery Rate (FDR):
+alpha = 0.01
+# get only significant taxa based on p-value adjusted (the FDR):
+resSig <- subset(resOrdered, padj < alpha)
+# sort significant values based on the log2-fold-change:
+resfc = resSig[order(resSig$log2FoldChange),]
+# sort significant values based on abundance (the base mean):
+resbm = resSig[order(resSig$baseMean),]
+# save the the tables 
+write.table(as.data.frame(resbm), file="deseq2_Peterborough_Velsko.tsv", sep="\t", row.names=TRUE, col.names=TRUE, quote=F)
+  # convert the data in a dataframe
+resSigMod = cbind(as(resSig, "data.frame"), as(tax_table(subsample_flt)[rownames(resSig), ], "matrix"))
+# Plot log-fold-changes of the OTUs based on species
+p3=ggplot(resSigMod, aes(x=species, y=log2FoldChange, color=phylum)) +
+    geom_jitter(size=3, width = 0.2) +
+    theme(axis.text.x = element_text(size = 10, angle = -90, hjust = 0, vjust=0.5))
+```
+
+We combined the plot with `ggarrange`
+```R
+ggarrange(p1, p2, p3, labels = c("A", "B", "C"), ncol = 3, nrow = 1, widths = c(0.8,1,0.4))
+```
+
