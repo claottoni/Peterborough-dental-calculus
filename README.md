@@ -326,3 +326,48 @@ We combined the plot with `ggarrange`
 ggarrange(p1, p2, p3, labels = c("A", "B", "C"), ncol = 3, nrow = 1, widths = c(0.8,1,0.4))
 ```
 
+### PERMANOVA and dispersion test
+The PERMANOVA was done in R with `adonis` test. The dispersion test for variance homogeneity of the samples comared was done with `betadisper`. As already done in DEseq2, we contrasted the sample from Peterborough against those from modern dental calculus, 18th-19th century UK and Medieval Ireland. 
+```R
+#-1 Peterborough VS modern
+subgroup1 = c("Peterborough","Dental_calculus_modern")
+subsample1 = subset_samples(my_biom_rel_clr, Group1 %in% subgroup1)
+# estimante Aitchinson dist (clr+euclidean)
+distAIT1 = phyloseq::distance(subsample1, method = "euclidean")
+# make permanova 
+subsample1.df = data.frame(sample_data(subsample1))
+adonis.results1 = adonis(distAIT1 ~ Group1, data = subsample1.df)
+write.table(as.data.frame(adonis.results1$aov.tab),"adonis_Peterborough_modern.tsv", sep="\t",row.names=TRUE,col.names=TRUE)
+#--- betadisper to test dispersion homogeneity
+mod1 <- betadisper(distAIT1, subsample1.df$Group1)
+dispersion1 = anova(mod1)  #Anova of distances to centroids to interpret the significance of F --> #NOT SIGNIFICANT: GROUP DISPERSIONs ARE HOMOGENEOUS
+write.table(as.data.frame(dispersion1),"dispersion_Peterborough_modern.tsv", sep="\t",row.names=TRUE,col.names=TRUE)
+
+#-2 Peterborough VS 18th-19th century UK
+subgroup2 = c("Peterborough","Dental_calculus_human_18-19th_c.")
+subsample2 = subset_samples(my_biom_rel_clr, Group1 %in% subgroup2)
+# estimante Aitchinson dist (clr+euclidean)
+distAIT2 = phyloseq::distance(subsample2, method = "euclidean")
+# make permanova 
+subsample2.df = data.frame(sample_data(subsample2))
+adonis.results2 = adonis(distAIT2 ~ Group1, data = subsample2.df)
+write.table(as.data.frame(adonis.results2$aov.tab),"adonis_Peterborough_Velsko.tsv", sep="\t",row.names=TRUE,col.names=TRUE)
+#--- betadisper to test dispersion homogeneity
+mod2 <- betadisper(distAIT2, subsample2.df$Group1)
+dispersion2 = anova(mod2)  #Anova of distances to centroids to interpret the significance of F --> #NOT SIGNIFICANT: GROUP DISPERSIONs ARE HOMOGENEOUS
+write.table(as.data.frame(dispersion2),"dispersion_Peterborough_Velsko.tsv", sep="\t",row.names=TRUE,col.names=TRUE)
+
+#-3 Peterborough VS Medieval Ireland
+subgroup3 = c("Peterborough","Dental_calculus_medieval")
+subsample3 = subset_samples(my_biom_rel_clr, Group1 %in% subgroup3)
+# estimante Aitchinson dist (clr+euclidean)
+distAIT3 = phyloseq::distance(subsample3, method = "euclidean")
+# make permanova 
+subsample3.df = data.frame(sample_data(subsample3))
+adonis.results3 = adonis(distAIT3 ~ Group1, data = subsample3.df)
+write.table(as.data.frame(adonis.results3$aov.tab),"adonis_Peterborough_Mann.tsv", sep="\t",row.names=TRUE,col.names=TRUE)
+#--- betadisper to test dispersion homogeneity
+mod3 <- betadisper(distAIT3, subsample3.df$Group1)
+dispersion3 = anova(mod3)  #Anova of distances to centroids to interpret the significance of F --> #NOT SIGNIFICANT: GROUP DISPERSIONs ARE HOMOGENEOUS
+write.table(as.data.frame(dispersion3),"dispersion_Peterborough_Mann.tsv", sep="\t",row.names=TRUE,col.names=TRUE)
+```
