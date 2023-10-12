@@ -132,7 +132,7 @@ done
 ```
 
 ### Parse the Bracken outputs to abundance tables
-To create an abundance table comprehensive of all the taxa abundances for every sample we used a custom R script, `brackenToAbundanceTable_v2.R` (available in toolbox repository), which merges the species abundances contained in the Bracken output of each sample in one table. The script needs as argument the path to the folder containing the Bracken results. When working in the folder containing the Bracken outputs: 
+To create an abundance table comprehensive of all the taxa abundances for every sample we used a custom R script, `brackenToAbundanceTable_v2.R` (available in [toolbox](https://github.com/claottoni/toolbox) repository), which merges the species abundances contained in the Bracken output of each sample in one table. The script needs as argument the path to the folder containing the Bracken results. When working in the folder containing the Bracken outputs: 
 ```bash
 brackenToAbundanceTable_v2.R .
 ```
