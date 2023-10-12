@@ -144,7 +144,7 @@ abundanceTablesMerger_v2.R *.txt
 The output is a file named abundance_table_IDs.merged, which is used for downstream analyses.
 
 ### Normalization of the abundance table for genome length and full taxonomy description
-We normalized the abundance of each species for its genome lenth. To do that we used a Python script (`gL-normalizer-lite_v3.py`, available in the toolbox repository) that takes three arguments: 1) the abundance table with names of the species, 2) the table of genome lengths (parsed from the NCBI genome browser, available in the toolbox repository), 3) the name of the output file. The script searches the names of the species in the file with the list of genome lengths of species in the NCBI and divides the abundance of each species by the length of the assembly available in the NCBI. 
+We normalized the abundance of each species for its genome lenth. To do that we used a Python script (`gL-normalizer-lite_v3.py`, available in the [toolbox](https://github.com/claottoni/toolbox) repository) that takes three arguments: 1) the abundance table with names of the species, 2) the table of genome lengths (parsed from the NCBI genome browser, available in the [toolbox](https://github.com/claottoni/toolbox) repository), 3) the name of the output file. The script searches the names of the species in the file with the list of genome lengths of species in the NCBI and divides the abundance of each species by the length of the assembly available in the NCBI. 
 ```bash
 TABLE=gL-prokaryotes-viruses-Jun2022.table
 python gL-normalizer-lite_v3.py abundance_table_IDs.merged $TABLE abundance_table_IDs.merged.norm
@@ -440,7 +440,7 @@ DBNAME=/g100_scratch/userexternal/cottoni0/databases/card_aro_housekeeping/recA_
 blastn -query $FASTA -db $DBNAME -out ${OUTPUT}.hk.blastn.out -outfmt 6
 ```
 
-A custom python script (available in toolbox repository) was used to normalize for the sequencing depth the hits to the housekeeping database for each sample of the comparative database used and generate the file `Peterborough_full_dataset_hk_genes.txt`. 
+A custom python script (available in [toolbox](https://github.com/claottoni/toolbox) repository) was used to normalize for the sequencing depth the hits to the housekeeping database for each sample of the comparative database used and generate the file `Peterborough_full_dataset_hk_genes.txt`. 
 ```bash
 amr_blastn_parser_v2.py *.blastn.out > Peterborough_full_dataset_hk_genes.txt
 ```
