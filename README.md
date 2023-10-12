@@ -2,9 +2,6 @@
 Main pipelines and command lines used for the analysis of Late Medieval ancient dental calculus samples from the leprosarium of St Leonard, Peterborough (England)
 The bioinformatic analyses were done on the Galileo100 supercomputing cluster of Cineca, with the support of Elixir-Italy and the HPC@CINECA program.
 
-## Table of contents
-https://github.com/claottoni/Peterborough-dental-calculus/blob/main/README.md#pre-processing-of-raw-sequencing-data
-
 ## Pre-processing of raw sequencing data
 Sequencing data from four individuals and two negative controls consisted of paired-end sequencing reads, which were quality-filtered, trimmed of the adapter sequences and merged with AdapterRemoval: 
 
