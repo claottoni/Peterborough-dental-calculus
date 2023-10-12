@@ -2,6 +2,26 @@
 Main pipelines and command lines used for the analysis of Late Medieval ancient dental calculus samples from the leprosarium of St Leonard, Peterborough (England)
 The bioinformatic analyses were done on the Galileo100 supercomputing cluster of Cineca, with the support of Elixir-Italy and the HPC@CINECA program.
 
+# Table of contents
+
+<!--ts-->
+   * [Pre-processing of raw sequencing data](#pre-processing-of-raw-sequencing-data)
+   * [Taxonomic classification of the reads](#taxonomic-classification-of-the-reads)
+      * [Construction of Kraken2 custom database](#construction-of-kraken2-custom-database)
+      * [Classification of the reads with Kraken2 and quantification with Bracken](#classification-of-the-reads-with-kraken2-and-quantification-with-bracken)
+      * [Remote files](#remote-files)
+      * [Multiple files](#multiple-files)
+      * [Combo](#combo)
+      * [Auto insert and update TOC](#auto-insert-and-update-toc)
+      * [GitHub token](#github-token)
+      * [TOC generation with Github Actions](#toc-generation-with-github-actions)
+   * [Tests](#tests)
+   * [Dependency](#dependency)
+   * [Docker](#docker)
+     * [Local](#local)
+     * [Public](#public)
+<!--te-->
+
 ## Pre-processing of raw sequencing data
 Sequencing data from four individuals and two negative controls consisted of paired-end sequencing reads, which were quality-filtered, trimmed of the adapter sequences and merged with AdapterRemoval: 
 
