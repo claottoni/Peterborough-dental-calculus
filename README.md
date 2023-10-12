@@ -459,7 +459,7 @@ colnames(tabfinal) = c("gene",files)
 write.table(tabfinal, file = 'Peterborough_full_dataset_amr_genes.txt', sep="\t", row.names=F, na="0", col.names=T, quote = FALSE)
 ```
 
-Then we imported the two tables with the results of the housekeeping genes and the card databae in R and made some changes in them in order to make them fully consistent in terms of order of the samples.
+Then we imported the two tables with the number of hits in the card database (AMR genes) of and in the housekeeping genes database and  in R and made some changes in the tables in order to make them fully consistent in terms of order of the samples. We did that in order to normalize the number of card hits in the following step. 
 ```R
 amr_genes = read.delim("Peterborough_full_dataset_amr_genes.txt", header=T, fill=T, row.names=NULL, sep="\t")
 hk3_genes = read.delim("Peterborough_full_dataset_hk_genes.txt", header=T, fill=T, row.names=NULL, sep="\t")
@@ -474,9 +474,56 @@ hk3_genes.sorted = hk3_genes[c(2,1,4:6,8,9:53,57:87),]
 write.table(hk3_genes.sorted, "Peterborough_full_dataset_hk_genes.sorted.txt", quote=F, sep="\t", row.names=F, col.names=T)
 ```
 
-Finally we normalized the AMR hits with housekeeping genes hits and created a dataframe
+Finally we normalized the hits in the AMR genes with the housekeeping genes hits and created a dataframe
 ```R
 amr_genes.final.norm = amr_genes.final/hk3_genes.sorted$Hits*1000000
 amr_genes.final.norm = as.data.frame(amr_genes.final.norm)
 write.table(amr_genes.final.norm, "Peterborough_AMR_hk3norm_cpm.tsv", quote=F, sep="\t", row.names=T, col.names=T)
 ```
+
+To analyse the data in R we first created a vector with the group metadata of each sample and we attached it to the dataframe (coumn named "group")
+```R
+amr_genes.final.norm$group = c("Peterborough","NTC","Peterborough","Peterborough","Peterborough","NTC","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","UK-18-19th_c.","Modern","Modern","Modern","Modern","Modern","Modern","Modern","Modern","Modern","Modern","Ireland-Medieval","Ireland-Medieval","Ireland-Medieval","Ireland-Medieval","Ireland-Medieval","Ireland-Medieval","Ireland-Medieval","Ireland-Medieval","Ireland-Medieval","Ireland-Medieval","Ireland-Medieval","Ireland-Medieval","Ireland-Medieval","Modern","Modern","Modern","Modern","Modern","Modern","Modern","Modern")
+```
+
+We made a Wilcoxon Rank Sum Tests with Benjamini & Hochberg adjusted P-values by selecting the columns in the dataframe corresponding to the genes. 
+```R
+# make wilcoxon test
+wilcox = lapply(amr_genes.final.norm[,c(1:33)], function(x) pairwise.wilcox.test(x, amr_genes.final.norm$group, p.adjust.method = "BH"))
+library(plyr)
+out <- ldply(wilcox, function(x) x$p.value)
+# save table
+write.table(out, "Peterborough_wilcox_test_hk3_norm_full.tsv", quote=F, sep="\t", row.names=F, col.names=T)
+```
+
+To generate a multipanel plot of the results:
+```R
+# Plot all boxplots in multipanel
+library(tidyverse)
+#run pivot longer to prepare the data by including all the gene families to display in the plot.
+df.long <- amr_genes.final.norm %>% 
+  pivot_longer("ABC-F ATP-binding cassette ribosomal protection protein":"Rm3 family beta-lactamase", names_to = 'variable', values_to = 'value')
+# we changed the order for displaying the charts
+df.long$group <- factor(df.long$group, levels = c("NTC", "Peterborough", "Ireland-Medieval", "UK-18-19th_c.", "Modern"))
+# generate the multipanel plots
+g = ggplot(data = df.long, aes(x = group, y = value, fill = group)) +
+  geom_boxplot(lwd=0.1,
+  outlier.size = 0.5,
+  outlier.stroke = 0.1) +
+  theme(axis.text.x = element_blank(),
+  strip.text = element_text(size = 5),
+  legend.title = element_text(colour = "black", size = 7, face = "bold"),
+  legend.text = element_text(colour = "black", size = 6),
+  axis.line = element_line(size=0.1),
+  axis.ticks = element_line(size=0.1),
+  axis.title.x = element_blank(),
+  axis.text.y = element_text(size=4),  	#color="#993333", face="bold", angle=45
+  axis.title.y = element_text( size = 12, face = "bold" )) +
+  #axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_wrap(facets = ~variable, scales = 'free', 
+  #nrow=8, 
+  ncol=5
+  )
+
+
+
