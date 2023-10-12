@@ -9,17 +9,17 @@ The bioinformatic analyses were done on the Galileo100 supercomputing cluster of
    * [Taxonomic classification of the reads](#taxonomic-classification-of-the-reads)
       * [Construction of Kraken2 custom database](#construction-of-kraken2-custom-database)
       * [Classification of the reads with Kraken2 and quantification with Bracken](#classification-of-the-reads-with-kraken2-and-quantification-with-bracken)
-      * [Remote files](#remote-files)
-      * [Multiple files](#multiple-files)
-      * [Combo](#combo)
-      * [Auto insert and update TOC](#auto-insert-and-update-toc)
-      * [GitHub token](#github-token)
-      * [TOC generation with Github Actions](#toc-generation-with-github-actions)
-   * [Tests](#tests)
-   * [Dependency](#dependency)
-   * [Docker](#docker)
-     * [Local](#local)
-     * [Public](#public)
+      * [Parse the Bracken outputs to abundance tables](#parse-the-bracken-outputs-to-abundance-tables)
+      * [Normalization of the abundance table for genome length and full taxonomy description](#normalization-of-the-abundance-table-for-genome-length-and-full-taxonomy-description)
+   * [Analysis of metagenomic data in R](#analysis-of-metagenomic-data-in-r)
+     * [Preparation of Phyloseq datasets](#preparation-of-phyloseq-datasets)
+     * [Non-metric Multidimensional Scaling](#non-metric-multidimensional-scaling)
+     * [Differential taxonomic abundances with DESeq2](#differential-taxonomic-abundances-with-deseq2)
+     * [PERMANOVA and dispersion test](#permanova-and-dispersion-test)
+     * [Differential taxonomic abundances with DESeq2](#differential-taxonomic-abundances-with-deseq2)
+   * [Antibiotic microbial resistance analysis](#antibiotic-microbial-resistance-analysis)
+     * [Preparation of the databases and Blast analysis](#preparation-of-the-databases-and-blast-analysis)
+     * [AMR data analysis in R](#amr-data-analysis-in-r)    
 <!--te-->
 
 ## Pre-processing of raw sequencing data
@@ -393,6 +393,8 @@ write.table(as.data.frame(dispersion3),"dispersion_Peterborough_Mann.tsv", sep="
 ```
 
 ## Antibiotic microbial resistance analysis
+
+### Preparation of the databases and Blast analysis
 We downloaded the `nucleotide_fasta_protein_homolog_model.fasta` from the CARD database and we replaced the spaces in the db with underscore, so as to keep the full info about the hits in the blastn analysis: 
 ```bash
 sed 's/ /_/g' nucleotide_fasta_protein_homolog_model.fasta > nucleotide_fasta_protein_homolog_model.fasta_mod.fasta
@@ -460,6 +462,7 @@ Reads-hits in the blastn output are sorted by decreasing bitscore (last column).
 for i in $(find -name "*.out.index" -type f); do echo $i; sort -u -k1,1 $i | awk -F'\t' 'BEGIN{OFS="\t"}{print $1,$4}' > ${i}.uniq; done
 ```
 
+### AMR data analysis in R
 The following analyses were done in R. We fits prepared a table of the samples by merging all the files from each dataset (from this study and the literature) to generate the file `Peterborough_full_dataset_amr_genes.txt` 
 
 ```R
