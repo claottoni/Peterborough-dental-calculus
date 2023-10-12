@@ -395,7 +395,7 @@ write.table(as.data.frame(dispersion3),"dispersion_Peterborough_Mann.tsv", sep="
 ## Antibiotic microbial resistance analysis
 
 ### Preparation of the databases and Blast analysis
-We downloaded the `nucleotide_fasta_protein_homolog_model.fasta` from the CARD database and we replaced the spaces in the db with underscore, so as to keep the full info about the hits in the blastn analysis: 
+We downloaded the `nucleotide_fasta_protein_homolog_model.fasta` from the [CARD](https://card.mcmaster.ca/download) database and we replaced the spaces in the db with underscore, so as to keep the full info about the hits in the blastn analysis: 
 ```bash
 sed 's/ /_/g' nucleotide_fasta_protein_homolog_model.fasta > nucleotide_fasta_protein_homolog_model.fasta_mod.fasta
 ```
