@@ -16,8 +16,7 @@ The bioinformatic analyses were done on the Galileo100 supercomputing cluster of
      * [Non-metric Multidimensional Scaling](#non-metric-multidimensional-scaling)
      * [Differential taxonomic abundances with DESeq2](#differential-taxonomic-abundances-with-deseq2)
      * [PERMANOVA and dispersion test](#permanova-and-dispersion-test)
-     * [Differential taxonomic abundances with DESeq2](#differential-taxonomic-abundances-with-deseq2)
-   * [Antibiotic microbial resistance analysis](#antibiotic-microbial-resistance-analysis)
+   * [Antimicrobial resistance analysis](#antibiotic-microbial-resistance-analysis)
      * [Preparation of the databases and Blast analysis](#preparation-of-the-databases-and-blast-analysis)
      * [AMR data analysis in R](#amr-data-analysis-in-r)    
 <!--te-->
@@ -392,7 +391,7 @@ dispersion3 = anova(mod3)  #Anova of distances to centroids to interpret the sig
 write.table(as.data.frame(dispersion3),"dispersion_Peterborough_Mann.tsv", sep="\t",row.names=TRUE,col.names=TRUE)
 ```
 
-## Antibiotic microbial resistance analysis
+## Antimicrobial resistance analysis
 
 ### Preparation of the databases and Blast analysis
 We downloaded the `nucleotide_fasta_protein_homolog_model.fasta` from the [CARD](https://card.mcmaster.ca/download) database and we replaced the spaces in the db with underscore, so as to keep the full info about the hits in the blastn analysis: 
