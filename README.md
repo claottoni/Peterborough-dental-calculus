@@ -16,7 +16,7 @@ The bioinformatic analyses were done on the Galileo100 supercomputing cluster of
      * [Non-metric Multidimensional Scaling](#non-metric-multidimensional-scaling)
      * [Differential taxonomic abundances with DESeq2](#differential-taxonomic-abundances-with-deseq2)
      * [PERMANOVA and dispersion test](#permanova-and-dispersion-test)
-   * [Antimicrobial resistance analysis](#antibiotic-microbial-resistance-analysis)
+   * [Antimicrobial resistance analysis](#antimicrobial-resistance-analysis)
      * [Preparation of the databases and Blast analysis](#preparation-of-the-databases-and-blast-analysis)
      * [AMR data analysis in R](#amr-data-analysis-in-r)    
 <!--te-->
