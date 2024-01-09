@@ -481,7 +481,7 @@ colnames(tabfinal) = c("gene",files)
 write.table(tabfinal, file = 'Peterborough_full_dataset_amr_genes.txt', sep="\t", row.names=F, na="0", col.names=T, quote = FALSE)
 ```
 
-Then we imported the two tables with the number of hits in the card database (AMR genes) of and in the housekeeping genes database and  in R and made some changes in the tables in order to make them fully consistent in terms of order of the samples. We did that in order to normalize the number of card hits in the following step. 
+Then we imported the two tables with the number of hits in the card database (AMR genes)  and in the housekeeping genes database in R and made some changes in the tables in order to make them fully consistent in terms of order of the samples. We did that in order to normalize the number of card hits in the following step. 
 ```R
 amr_genes = read.delim("Peterborough_full_dataset_amr_genes.txt", header=T, fill=T, row.names=NULL, sep="\t")
 hk3_genes = read.delim("Peterborough_full_dataset_hk_genes.txt", header=T, fill=T, row.names=NULL, sep="\t")
