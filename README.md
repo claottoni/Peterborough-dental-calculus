@@ -462,7 +462,7 @@ for i in $(find -name "*.out.index" -type f); do echo $i; sort -u -k1,1 $i | awk
 ```
 
 ### AMR data analysis in R
-The following analyses were done in R. We fits prepared a table of the samples by merging all the files from each dataset (from this study and the literature) to generate the file `Peterborough_full_dataset_amr_genes.txt` 
+The following analyses were done in R. We prepared a table of the samples by merging all the files from each dataset (from this study and the literature) to generate the file `Peterborough_full_dataset_amr_genes.txt` 
 
 ```R
 files <- list.files(pattern="*.uniq$", full.names=T,recursive=FALSE)
